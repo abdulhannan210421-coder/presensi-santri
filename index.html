@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi Santri - Musyawarah PPS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body { background-color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 pb-12">
+
+  <!-- HEADING -->
+  <header class="bg-emerald-700 text-white shadow-lg mb-6 py-4 px-6">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-emerald-600 rounded-lg">
+          <span class="material-icons-round text-2xl">bolt</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold">Presensi Santri <span class="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">GitHub Ultra-Fast</span></h1>
+          <p class="text-xs text-emerald-100">Sistem Verifikasi Presensi Otomatis & Cepat</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <span id="liveClock" class="text-lg font-mono font-bold bg-emerald-800 px-3 py-1 rounded-md border border-emerald-600">00.00.00 WIB</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 space-y-6">
+
+    <!-- ALERT ERROR/SUCCESS -->
+    <div id="alertBox" class="hidden p-4 rounded-xl text-sm font-semibold flex items-center justify-between shadow-md transition-all">
+      <span id="alertMsg"></span>
+      <button onclick="hideAlert()" class="text-lg font-bold">&times;</button>
+    </div>
+
+    <!-- UPPER GRID: TARGET & STATS -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      
+      <!-- TARGET WAKTU -->
+      <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-sm border border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Target Waktu</span>
+          <span class="material-icons-round text-emerald-400">schedule</span>
+        </div>
+        <div class="mt-1">
+          <label class="text-xs text-slate-400 block mb-1">Mulai Jam Musyawarah:</label>
+          <input type="time" id="jamMulaiTarget" value="07:30" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-1.5 w-full font-mono text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+      </div>
+
+      <!-- METRICS METERS -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Total Terlambat</span>
+        <div class="flex items-baseline gap-1">
+          <span id="metricTotalTelat" class="text-3xl font-extrabold text-rose-600">0</span>
+          <span class="text-xs text-slate-500 font-medium">santri</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Rata-rata Delay</span>
+        <div class="flex items-baseline gap-1">
+          <span id="metricRataDelay" class="text-3xl font-extrabold text-amber-500">0</span>
+          <span class="text-xs text-slate-500 font-medium">menit</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Tepat Waktu</span>
+        <div class="flex items-baseline gap-1">
+          <span id="metricTepatWaktu" class="text-3xl font-extrabold text-emerald-600">0</span>
+          <span class="text-xs text-slate-500 font-medium">santri</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MIDDLE GRID: INPUT & PROFILE CARD -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+      
+      <!-- INPUT BOX -->
+      <div class="md:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-icons-round text-emerald-600">qr_code_scanner</span>
+            <h2 class="font-bold text-slate-700">Input Presensi Cepat</h2>
+          </div>
+          <form onsubmit="event.preventDefault(); processAbsenFast();" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1">Ketik / Scan ID PPS</label>
+              <input type="text" id="idPpsInput" placeholder="Ketik ID lalu tekan Enter..." autofocus autocomplete="off" class="w-full text-lg font-mono px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+            </div>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+              <span class="material-icons-round text-sm">flash_on</span> Proses Instan
+            </button>
+          </form>
+        </div>
+        <div id="loadingStatus" class="mt-4 text-xs text-slate-400 text-center flex items-center justify-center gap-2">
+          <span class="material-icons-round animate-spin text-sm">sync</span> Memuat Database Santri...
+        </div>
+      </div>
+
+      <!-- DISPLAY RESULT CARD -->
+      <div class="md:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[260px] flex items-center justify-center relative">
+        
+        <div id="emptyState" class="text-center text-slate-400 space-y-2">
+          <span class="material-icons-round text-5xl">badge</span>
+          <p class="text-sm">Scan barcode atau masukkan ID PPS untuk menampilkan profil santri.</p>
+        </div>
+
+        <div id="santriCard" class="hidden w-full space-y-4">
+          <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="material-icons-round text-emerald-600 text-sm">verified</span>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Terverifikasi Sistem</span>
+            </div>
+            <span id="delayBadge" class="px-3 py-1 rounded-full font-bold text-xs"></span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center gap-6">
+            <img id="displayFoto" src="" alt="Foto Santri" class="w-28 h-36 object-cover rounded-xl bg-slate-100 border border-slate-200 shadow-sm flex-shrink-0" onerror="handlePhotoError(this)">
+            
+            <div class="space-y-2 w-full text-center sm:text-left">
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase">Nama Santri</span>
+                <h3 id="displayNama" class="text-xl font-black text-slate-800 leading-tight"></h3>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
+                <div class="bg-slate-50 p-2 rounded-lg">
+                  <span class="text-[10px] text-slate-400 block font-semibold">ID PPS</span>
+                  <span id="displayIdPps" class="font-mono font-bold text-slate-700"></span>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg">
+                  <span class="text-[10px] text-slate-400 block font-semibold">Domisili</span>
+                  <span id="displayDomisili" class="font-semibold text-slate-700"></span>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg">
+                  <span class="text-[10px] text-slate-400 block font-semibold">Kelas & Tingkat</span>
+                  <span id="displayKelasTingkat" class="font-semibold text-slate-700"></span>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg">
+                  <span class="text-[10px] text-slate-400 block font-semibold">Absen & Ruang</span>
+                  <span id="displayAbsenRuang" class="font-semibold text-slate-700"></span>
+                </div>
+              </div>
+
+              <div class="bg-emerald-50 text-emerald-800 p-2 rounded-lg flex items-center justify-between text-xs border border-emerald-100 mt-2">
+                <span class="font-bold flex items-center gap-1">
+                  <span class="material-icons-round text-sm">schedule</span> Jam Absen:
+                </span>
+                <span id="displayJamAbsen" class="font-mono font-bold text-sm"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TABLE REKAP -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-icons-round text-emerald-600">assessment</span>
+          <h2 class="font-bold text-slate-700">Rekapitulasi Santri Terlambat Hari Ini</h2>
+        </div>
+        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm">
+          <span class="material-icons-round text-sm">download</span> Export Excel (.xlsx)
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-50 text-slate-500 border-b border-slate-100 uppercase font-bold">
+              <th class="py-3 px-4">No</th>
+              <th class="py-3 px-4">Jam Absen</th>
+              <th class="py-3 px-4">ID PPS</th>
+              <th class="py-3 px-4">Nama Santri</th>
+              <th class="py-3 px-4">Domisili</th>
+              <th class="py-3 px-4">Kelas & Tingkat</th>
+              <th class="py-3 px-4">Keterlambatan</th>
+            </tr>
+          </thead>
+          <tbody id="rekapTableBody" class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="7" class="py-6 text-center text-slate-400">Belum ada data presensi yang masuk.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // --- GANTI STRING DI BAWAH INI DENGAN LINK WEB APP APPS SCRIPT ANDA ---
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWo1hL1eu6znpy2oTGHMpUpWjH5NUoQJRY873CTrh-7ot79OFaV5Juk0c3BgB0WmtoA/exec";
+
+    let LOCAL_DATABASE = {};
+    let rekapData = [];
+    let currentNamaSantri = "";
+
+    // Live Clock
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('liveClock').innerText = now.toLocaleTimeString('id-ID', { hour12: false }) + ' WIB';
+    }, 1000);
+
+    // Fetch Database Santri Saat Load
+    window.onload = function() {
+      fetch(APPS_SCRIPT_URL + "?action=getSantri")
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            LOCAL_DATABASE = data.santriMap;
+            document.getElementById('loadingStatus').innerHTML = '<span class="material-icons-round text-emerald-500 text-sm">check_circle</span> Database Siap (' + Object.keys(LOCAL_DATABASE).length + ' Santri)';
+          } else {
+            showAlert("Gagal memuat database: " + data.message);
+          }
+        })
+        .catch(err => {
+          showAlert("Gagal terhubung ke Apps Script!");
+        });
+    };
+
+    function processAbsenFast() {
+      hideAlert();
+      const inputEl = document.getElementById('idPpsInput');
+      const idPps = inputEl.value.trim();
+      
+      if (!idPps) {
+        showAlert("Silakan masukkan ID PPS santri!");
+        return;
+      }
+
+      const santri = LOCAL_DATABASE[idPps];
+
+      if (!santri) {
+        showAlert("ID PPS '" + idPps + "' tidak ditemukan di database!");
+        inputEl.select();
+        return;
+      }
+
+      const now = new Date();
+      const jamAbsenStr = now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      
+      const jamTarget = document.getElementById('jamMulaiTarget').value || "07:30";
+      const targetParts = jamTarget.split(':');
+      const targetDate = new Date();
+      targetDate.setHours(parseInt(targetParts[0], 10), parseInt(targetParts[1], 10), 0, 0);
+
+      const diffMs = now - targetDate;
+      const delayMinutes = diffMs > 0 ? Math.floor(diffMs / 60000) : 0;
+
+      inputEl.value = '';
+      currentNamaSantri = santri.nama;
+
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('santriCard').classList.remove('hidden');
+
+      document.getElementById('displayNama').innerText = santri.nama;
+      document.getElementById('displayIdPps').innerText = santri.idPps;
+      document.getElementById('displayDomisili').innerText = santri.statusDomisili + ' / ' + santri.domisili;
+      document.getElementById('displayKelasTingkat').innerText = santri.kelas + ' (' + santri.tingkat + ')';
+      document.getElementById('displayAbsenRuang').innerText = 'Absen ' + santri.noAbsen + ' / ' + santri.ruangKelas;
+      document.getElementById('displayJamAbsen').innerText = jamAbsenStr + ' WIB';
+
+      const imgEl = document.getElementById('displayFoto');
+      if (santri.fotoUrl) {
+        imgEl.src = santri.fotoUrl;
+      } else {
+        imgEl.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(santri.nama) + '&background=059669&color=fff&size=256&font-size=0.33';
+      }
+
+      const badgeEl = document.getElementById('delayBadge');
+      if (delayMinutes > 0) {
+        badgeEl.className = "px-3 py-1 rounded-full font-bold text-xs bg-rose-100 text-rose-700 border border-rose-200";
+        badgeEl.innerHTML = '<span class="material-icons-round text-sm">warning</span> Terlambat ' + delayMinutes + ' Menit';
+      } else {
+        badgeEl.className = "px-3 py-1 rounded-full font-bold text-xs bg-emerald-100 text-emerald-700 border border-emerald-200";
+        badgeEl.innerHTML = '<span class="material-icons-round text-sm">check_circle</span> Tepat Waktu';
+      }
+
+      const dateStr = now.toLocaleDateString('id-ID');
+      rekapData.unshift({
+        tanggal: dateStr,
+        jam: jamAbsenStr,
+        idPps: santri.idPps,
+        nama: santri.nama,
+        domisili: santri.statusDomisili + ' (' + santri.domisili + ')',
+        kelasTingkat: santri.kelas + ' - ' + santri.tingkat,
+        delay: delayMinutes
+      });
+
+      renderTable();
+      updateMetrics();
+
+      // Send to Apps Script Backend
+      const rekapRow = [
+        dateStr, jamAbsenStr, santri.idPps, santri.nama,
+        santri.statusDomisili + ' (' + santri.domisili + ')',
+        santri.kelas + ' - ' + santri.tingkat, delayMinutes
+      ];
+
+      fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "saveRekap", row: rekapRow })
+      });
+
+      inputEl.focus();
+    }
+
+    function handlePhotoError(img) {
+      img.onerror = null;
+      img.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentNamaSantri || 'Santri') + '&background=059669&color=fff&size=256&font-size=0.33';
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('rekapTableBody');
+      if (rekapData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">Belum ada data presensi.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rekapData.map((item, index) => {
+        const isLate = item.delay > 0;
+        return `
+          <tr class="hover:bg-slate-50 transition-all">
+            <td class="py-3 px-4 font-semibold text-slate-500">${index + 1}</td>
+            <td class="py-3 px-4 font-mono font-bold">${item.jam}</td>
+            <td class="py-3 px-4 font-mono">${item.idPps}</td>
+            <td class="py-3 px-4 font-bold text-slate-800">${item.nama}</td>
+            <td class="py-3 px-4">${item.domisili}</td>
+            <td class="py-3 px-4">${item.kelasTingkat}</td>
+            <td class="py-3 px-4">
+              ${isLate 
+                ? `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold">Terlambat ${item.delay} mnt</span>`
+                : `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold">Tepat Waktu</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateMetrics() {
+      const telatList = rekapData.filter(d => d.delay > 0);
+      const tepatList = rekapData.filter(d => d.delay === 0);
+
+      document.getElementById('metricTotalTelat').innerText = telatList.length;
+      document.getElementById('metricTepatWaktu').innerText = tepatList.length;
+
+      if (telatList.length > 0) {
+        const avg = Math.round(telatList.reduce((acc, curr) => acc + curr.delay, 0) / telatList.length);
+        document.getElementById('metricRataDelay').innerText = avg;
+      } else {
+        document.getElementById('metricRataDelay').innerText = '0';
+      }
+    }
+
+    function exportToExcel() {
+      if (rekapData.length === 0) {
+        showAlert("Belum ada data untuk di-export!");
+        return;
+      }
+
+      const excelData = rekapData.map((d, index) => ({
+        "No": index + 1,
+        "Tanggal": d.tanggal,
+        "Jam Absen": d.jam,
+        "ID PPS": d.idPps,
+        "Nama Santri": d.nama,
+        "Domisili": d.domisili,
+        "Kelas & Tingkat": d.kelasTingkat,
+        "Keterlambatan (Menit)": d.delay > 0 ? d.delay : "Tepat Waktu"
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Presensi");
+      XLSX.writeFile(workbook, "Rekap_Presensi_Santri_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+    }
+
+    function showAlert(msg) {
+      const box = document.getElementById('alertBox');
+      document.getElementById('alertMsg').innerText = msg;
+      box.className = "p-4 rounded-xl text-sm font-semibold flex items-center justify-between shadow-md transition-all bg-rose-100 text-rose-800 border border-rose-200 mb-4";
+      box.classList.remove('hidden');
+    }
+
+    function hideAlert() {
+      document.getElementById('alertBox').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
