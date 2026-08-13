@@ -204,7 +204,7 @@
 
   <script>
     // --- GANTI STRING DI BAWAH INI DENGAN LINK WEB APP APPS SCRIPT ANDA ---
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyY-G7NGLPyivFxSqUaqd8lzhYnrAe15sVkKxN9HFT7DO_jHhvJdKl_yWfDTzPCHXGObQ/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-8CVw375lNohDOBIsh2-zxoab1g-i-H-iAS6Tdu_JZfIv0ewuqTxe1_gKI2HQUq5Rlg/exec";
     
     let LOCAL_DATABASE = {};
     let rekapData = [];
@@ -276,10 +276,14 @@
       document.getElementById('displayJamAbsen').innerText = jamAbsenStr + ' WIB';
 
       const imgEl = document.getElementById('displayFoto');
+// Kita biarkan fotoUrl kosong dari backend Apps Script (agar loading backend instan)
+// Web frontend akan mencari foto secara direct via Nomor ID PPS santri
 if (santri.fotoUrl) {
   imgEl.src = santri.fotoUrl;
 } else {
-  imgEl.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(santri.nama) + '&background=059669&color=fff&size=256&font-size=0.33';
+  // Ganti avatar inisial dengan pencarian thumbnail Drive instan berdasarkan ID PPS
+  // Asumsikan data fotoUrl kosong, kita pakai trik direct Drive via Nomor ID PPS santri
+  imgEl.src = 'https://drive.google.com/thumbnail?id=' + santri.idPps + '&sz=w400';
 }
       const badgeEl = document.getElementById('delayBadge');
       if (delayMinutes > 0) {
