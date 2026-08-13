@@ -204,8 +204,8 @@
 
   <script>
     // --- GANTI STRING DI BAWAH INI DENGAN LINK WEB APP APPS SCRIPT ANDA ---
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/library/d/1m1e9J-rmPpwXecR00IuLFloAfR9YniqB3Ud9zA02MlHYJyGXmYsoM06v/17";
-
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZwDXxpzgeXB9XL9MX0BiuKt_szU1T1ltjFSyQodHCKvAM2Ga81EZB-Es2lVRVoOU78w/exec";
+    
     let LOCAL_DATABASE = {};
     let rekapData = [];
     let currentNamaSantri = "";
@@ -279,7 +279,7 @@
 if (santri.fotoUrl) {
   imgEl.src = santri.fotoUrl;
 } else {
-  imgEl.src = 'https://drive.google.com/thumbnail?id=' + santri.idPps + '&sz=w400';
+  imgEl.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(santri.nama) + '&background=059669&color=fff&size=256&font-size=0.33';
 }
       const badgeEl = document.getElementById('delayBadge');
       if (delayMinutes > 0) {
