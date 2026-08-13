@@ -204,7 +204,7 @@
 
   <script>
     // --- GANTI STRING DI BAWAH INI DENGAN LINK WEB APP APPS SCRIPT ANDA ---
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxInlStdZHipWcDRIkWEya07xI-KfDccDD6ZyIdAHCWbpImTawCrpa4tPeEIUuWmzG7Eg/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyf9lfMTzm7H5Ng4A84AQQ8ykzg7M6WRf_8zvHtxo5O7en9N6FxSqi3wS3ym9TfR900lQ/exec";
 
     let LOCAL_DATABASE = {};
     let rekapData = [];
@@ -276,12 +276,11 @@
       document.getElementById('displayJamAbsen').innerText = jamAbsenStr + ' WIB';
 
       const imgEl = document.getElementById('displayFoto');
-      if (santri.fotoUrl) {
-        imgEl.src = santri.fotoUrl;
-      } else {
-        imgEl.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(santri.nama) + '&background=059669&color=fff&size=256&font-size=0.33';
-      }
-
+if (santri.fotoUrl) {
+  imgEl.src = santri.fotoUrl;
+} else {
+  imgEl.src = 'https://drive.google.com/thumbnail?id=' + santri.idPps + '&sz=w400';
+}
       const badgeEl = document.getElementById('delayBadge');
       if (delayMinutes > 0) {
         badgeEl.className = "px-3 py-1 rounded-full font-bold text-xs bg-rose-100 text-rose-700 border border-rose-200";
